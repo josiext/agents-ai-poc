@@ -76,3 +76,5 @@ gem "dotenv-rails", "~> 3.1"
 gem "google-cloud-ai_platform", "~> 2.0"
 
 gem "google-cloud-dialogflow-cx-v3", "~> 1.7"
+
+gem "solargraph", "~> 0.55.0"
