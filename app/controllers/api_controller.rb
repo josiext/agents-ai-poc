@@ -4,9 +4,12 @@ class ApiController < ApplicationController
   # POST /process
   def process_request
     begin
+      instruction = params[:instruction]
+      prompt = Prompter.user(instruction)
+
       chat = RubyLLM.chat
-      
-      response = chat.ask "Saluda de manera amigable en español"
+
+      response = chat.ask prompt
       
       render json: { 
         message: response.content,
