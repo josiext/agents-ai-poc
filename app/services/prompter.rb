@@ -1,6 +1,8 @@
 # rubocop:disable all
 class Prompter
   EXAMPLE_HTML_GRAPH = "<!DOCTYPE html><html lang='es'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1,viewport-fit=cover'><title>Gráfico de barras</title></head><body><div style='max-width:400px;margin:auto'><canvas id='myBar'></canvas></div><script src='https://cdn.jsdelivr.net/npm/chart.js@4'></script><script>const ctx=document.getElementById('myBar');new Chart(ctx,{type:'bar',data:{labels:['Rojo','Azul'],datasets:[{label:'Ventas',data:[12,19],backgroundColor:['rgba(255,99,132,0.7)','rgba(54,162,235,0.7)'],borderColor:['rgba(255,99,132,1)','rgba(54,162,235,1)'],borderWidth:1}]},options:{scales:{y:{beginAtZero:true}}}});</script></body></html>"
+  ALLOWED_ACTIONS = %w[create-time].freeze
+  ALLOWED_COMMANDS = %w[get-client get-project get-law get-cases-info get-cases get-documents get-events get-tasks get-clients create-time].freeze
 
   class << self
     def user(instruction, context_data = nil)
@@ -169,7 +171,7 @@ class Prompter
             - Debes incluir el objeto commands en la respuesta.
 
         4. Obtener información de un cliente:
-          * Si el usuario pide obtener información de un cliente, debes asegurarte de que haya proporcionado una forma de identificar al cliente (nombre). En caso de no propocionar el nombre del cliente, debes buscar en los Datos de contexto si viene la key client_id o client_name. En caso de no encontrar el cliente en los Datos de contexto, buscar en el historial de conversación el último cliente mencionado. En caso de aún no obtener el cliente, pedir al usuario que proporcione el nombre del cliente.
+          * Si el usuario pide obtener información de un cliente, debes asegurarte de que haya proporcionado una forma de identificar al cliente (nombre). En caso de no propocionar el nombre del cliente, debes buscar en los Datos de contexto si viene la key client_id o client_name. En caso de aún no obtener el cliente, pedir al usuario que proporcione el nombre del cliente.
           * IMPORTANTE: Solo incluir el objeto \"commands\" en la respuesta cuando el usuario haya proporcionado el nombre del cliente. Si no proporciona alguno de estos dos, no incluir el objeto \"commands\"
           * Ejemplo de respuesta:
             {
@@ -295,8 +297,9 @@ class Prompter
         9. Obtener información de una ley:
           * Si el usuario pide obtener información de una ley específica, debes asegurarte de que haya proporcionado el número de la ley o asumir que se refiere a la ley de la que estaba hablando anteriormente.
           * Si el usuario proporciona el número de ley, debes usarlo en la key law_id.
-          * Si el usuario no proporciona el número de ley, pero desea encontrar una ley, debes ingresar la consulta en la key query.
+          * Si el usuario no proporciona el número de ley, pero desea encontrar una ley, debes ingresar la consulta en la key query que será utilizada como parametro de búsqueda vectorial.
           * Si el usuario hace una pregunta sobre la ley, debes usarla en la key question.
+          * Las propiedades law_id y query son mutuamente excluyentes, es decir, si se proporciona una, no se debe proporcionar la otra, si hay conflicto prefiere utilizar query.
           * No incluyas las llaves text ni html en la respuesta.
           * Ejemplo de respuesta:
             {
@@ -305,7 +308,7 @@ class Prompter
                 {
                   \"id\": \"get-law\",
                   \"args\": {
-                    \"law_id\": \"Número de la ley\",
+                    \"law_id\": \"Número de la ley en formato número entero sin comillas, ejemplo 19496\",
                     \"query\": \"Consulta para encontrar una ley\",
                     \"question\": \"Pregunta acerca de esa ley\"
                   }
@@ -506,13 +509,13 @@ class Prompter
         - Asegúrate de que el resumen mantenga la fidelidad al contenido legal original."
     end
 
-    def law_data(law_data, command)
+    def law_data(law_data, instruction, command)
       "
         Información de la ley:
         #{law_data}
 
         Pregunta del usuario:
-        #{command["args"]["question"]}
+        #{instruction}
 
         Contexto: Tu tarea es revisar la información de la ley proporcionada y responder con la data solicitada por el usuario.
         Rol: Eres un abogado experto con mas de dos décadas de experiencia ayudando a clientes a alcanzar sus objetivos. Tienes un alto nivel de conocimiento en el mundo legal y sabes como ayudar a tus clientes a alcanzar sus objetivos. Tu estilo de escritura es claro, conciso y preciso, asegurando que el abogado pueda entender la información de forma rápida y sencilla.
